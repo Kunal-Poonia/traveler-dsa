@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TravelRoute - Plan Your Journey</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --primary: #3498db;
+            --secondary: #2ecc71;
+            --accent: #f39c12;
+            --danger: #e74c3c;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+            --gray: #95a5a6;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--light);
+            color: var(--dark);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background-color: var(--primary);
+            color: var(--white);
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .content {
+            display: flex;
+            margin-top: 30px;
+            gap: 30px;
+        }
+
+        .map-container {
+            flex: 3;
+            background-color: var(--white);
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            height: 75vh;
+        }
+
+        .controls {
+            flex: 1;
+            background-color: var(--white);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .map {
+            width: 100%;
+            height: 100%;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .node {
+            cursor: pointer;
+            transition: transform 0.3s, fill 0.3s;
+        }
+
+        .node:hover {
+            transform: scale(1.3);
+        }
+
+        .node.transport { fill: #3498db; }
+        .node.attraction { fill: #f1c40f; }
+        .node.nature { fill: #2ecc71; }
+
+        .road {
+            stroke: var(--gray);
+            stroke-width: 2;
+        }
+
+        .road.highlighted {
+            stroke: var(--primary);
+            stroke-width: 4;
+            animation: pulse 1.5s infinite;
+        }
+
+        .location-label {
+            font-size: 12px;
+            fill: var(--dark);
+            font-weight: 500;
+            pointer-events: none;
+        }
+
+        .legend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            font-size: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .legend-color {
+            width: 14px;
+            height: 14px;
+            margin-right: 10px;
+            border-radius: 3px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        select:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .radio-button {
+            display: none;
+        }
+
+        .radio-label {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            flex: 1;
+        }
+
+        .radio-button:checked + .radio-label {
+            border-color: var(--primary);
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+
+        button {
+            background-color: var(--primary);
+            color: var(--white);
+            border: none;
+            padding: 14px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-secondary {
+            background-color: var(--light);
+            color: var(--dark);
+        }
+
+        .info-panel {
+            margin-top: 25px;
+            padding: 20px;
+            background-color: rgba(52, 152, 219, 0.1);
+            border-radius: 12px;
+            display: none;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .value {
+            font-weight: 600;
+        }
+
+        .alert {
+            padding: 12px;
+            background-color: #feebc8;
+            color: #9c4221;
+            border-left: 4px solid #ed8936;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .spinner {
+            border: 4px solid rgba(236, 240, 241, 0.5);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 12px;
+        }
+
+        .filters {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-button {
+            padding: 5px 10px;
+            border-radius: 50px;
+            font-size: 12px;
+            background-color: var(--light);
+            border: none;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        .filter-button.active {
+            background-color: var(--primary);
+            color: var(--white);
+        }
+
+        @keyframes pulse {
+            0% { stroke-width: 4; stroke-opacity: 0.7; }
+            50% { stroke-width: 6; stroke-opacity: 1; }
+            100% { stroke-width: 4; stroke-opacity: 0.7; }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            .map-container {
+                height: 50vh;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon"><i class="fas fa-route"></i></div>
+                    <h1>TravelRoute</h1>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="content">
+            <div class="map-container">
+                <div class="map" id="map-area">
+                    <svg id="road-network" viewBox="0 0 1000 800">
+                        <!-- Roads -->
+                        <line class="road" x1="200" y1="200" x2="400" y2="300" data-id="A-B" />
+                        <line class="road" x1="400" y1="300" x2="600" y2="200" data-id="B-C" />
+                        <line class="road" x1="200" y1="200" x2="300" y2="400" data-id="A-D" />
+                        <line class="road" x1="300" y1="400" x2="600" y2="200" data-id="D-C" />
+                        <!-- Nodes (populated dynamically) -->
+                    </svg>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #3498db;"></div>
+                            <div>Transport</div>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #f1c40f;"></div>
+                            <div>Attraction</div>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #2ecc71;"></div>
+                            <div>Nature</div>
+                        </div>
+                    </div>
+                    <div class="filters">
+                        <div class="filter-title">Filter by type:</div>
+                        <div class="filter-buttons">
+                            <button class="filter-button active" data-type="all">All</button>
+                            <button class="filter-button" data-type="transport">Transport</button>
+                            <button class="filter-button" data-type="attraction">Attractions</button>
+                            <button class="filter-button" data-type="nature">Nature</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <div class="form-title">Plan Your Route</div>
+                
+                <div class="form-group">
+                    <label for="start-point"><i class="fas fa-map-marker-alt"></i> Starting Point:</label>
+                    <select id="start-point">
+                        <option value="">Select starting point</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="end-point"><i class="fas fa-flag-checkered"></i> Destination:</label>
+                    <select id="end-point">
+                        <option value="">Select destination</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-walking"></i> Transportation Mode:</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="mode-walking" name="mode" value="walking" class="radio-button" checked>
+                            <label for="mode-walking" class="radio-label">Walking</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="mode-cycling" name="mode" value="cycling" class="radio-button">
+                            <label for="mode-cycling" class="radio-label">Cycling</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="mode-driving" name="mode" value="driving" class="radio-button">
+                            <label for="mode-driving" class="radio-label">Driving</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="mode-public" name="mode" value="public" class="radio-button">
+                            <label for="mode-public" class="radio-label">Public</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="button" id="find-route"><i class="fas fa-route"></i> Find Best Route</button>
+                <button type="button" id="reset-route" class="btn-secondary"><i class="fas fa-undo"></i> Reset Route</button>
+                
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Calculating route...
+                </div>
+                <div class="alert"></div>
+                
+                <div class="info-panel" id="route-info">
+                    <div class="info-title">Route Details</div>
+                    <div class="stat-item">
+                        <span>Distance:</span>
+                        <span class="value" id="route-distance"></span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Estimated Time:</span>
+                        <span class="value" id="route-time"></span>
+                    </div>
+                    <div class="places-list" id="route-stops"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Coordinates for nodes (for SVG rendering)
+        const nodeCoords = {
+            'A': { x: 200, y: 200 },
+            'B': { x: 400, y: 300 },
+            'C': { x: 600, y: 200 },
+            'D': { x: 300, y: 400 }
+        };
+
+        // Load nodes from backend
+        async function loadNodes() {
+            const response = await fetch('/nodes');
+            const nodes = await response.json();
+            const startSelect = document.getElementById('start-point');
+            const endSelect = document.getElementById('end-point');
+            const svg = document.getElementById('road-network');
+
+            for (const [id, node] of Object.entries(nodes)) {
+                // Add to dropdowns
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = node.name;
+                startSelect.appendChild(option.cloneNode(true));
+                endSelect.appendChild(option);
+
+                // Add to SVG
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('class', `node ${node.type}`);
+                circle.setAttribute('cx', nodeCoords[id].x);
+                circle.setAttribute('cy', nodeCoords[id].y);
+                circle.setAttribute('r', '10');
+                circle.setAttribute('data-id', id);
+                svg.appendChild(circle);
+
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('class', 'location-label');
+                text.setAttribute('x', nodeCoords[id].x + 15);
+                text.setAttribute('y', nodeCoords[id].y - 5);
+                text.textContent = node.name;
+                svg.appendChild(text);
+            }
+        }
+
+        // Find route
+        async function findRoute() {
+            const start = document.getElementById('start-point').value;
+            const end = document.getElementById('end-point').value;
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+
+            if (!start || !end) {
+                showAlert('Please select start and end points.');
+                return;
+            }
+
+            showLoading(true);
+            try {
+                const response = await fetch('/route', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ start, end, mode })
+                });
+                const data = await response.json();
+
+                if (data.error) {
+                    showAlert(data.error);
+                } else {
+                    displayRoute(data.path, data.distance, data.time);
+                }
+            } catch (error) {
+                showAlert('Error calculating route.');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Display route
+        async function displayRoute(path, distance, time) {
+            resetMap();
+            const nodesResponse = await fetch('/nodes');
+            const nodes = await nodesResponse.json();
+
+            for (let i = 0; i < path.length - 1; i++) {
+                const segment = [path[i], path[i + 1]].sort().join('-');
+                const road = document.querySelector(`[data-id="${segment}"]`);
+                if (road) road.classList.add('highlighted');
+            }
+
+            document.getElementById('route-distance').textContent = `${distance} km`;
+            document.getElementById('route-time').textContent = `${time} min`;
+            const stopsList = document.getElementById('route-stops');
+            stopsList.innerHTML = path.map(id => `<div class="place-item"><span class="place-icon">📍</span><span class="place-name">${nodes[id].name}</span></div>`).join('');
+            document.getElementById('route-info').style.display = 'block';
+        }
+
+        // Reset map
+        function resetMap() {
+            document.querySelectorAll('.road').forEach(road => road.classList.remove('highlighted'));
+            document.getElementById('route-info').style.display = 'none';
+            document.querySelector('.alert').style.display = 'none';
+        }
+
+        // Show/hide loading
+        function showLoading(show) {
+            document.querySelector('.loading').style.display = show ? 'block' : 'none';
+        }
+
+        // Show alert
+        function showAlert(message) {
+            const alert = document.querySelector('.alert');
+            alert.textContent = message;
+            alert.style.display = 'block';
+            setTimeout(() => alert.style.display = 'none', 3000);
+        }
+
+        // Filter nodes
+        document.querySelectorAll('.filter-button').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.filter-button').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                const type = button.dataset.type;
+                document.querySelectorAll('.node').forEach(node => {
+                    node.style.display = (type === 'all' || node.classList.contains(type)) ? 'block' : 'none';
+                });
+            });
+        });
+
+        // Event listeners
+        document.getElementById('find-route').addEventListener('click', findRoute);
+        document.getElementById('reset-route').addEventListener('click', resetMap);
+
+        // Initialize
+        loadNodes();
+    </script>
+</body>
+</html>
