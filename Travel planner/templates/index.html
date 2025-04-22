@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TravelRoute - Explore Your City</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        :root {
+            --primary: #19415c;
+            --secondary: #2ecc71;
+            --accent: #f39c12;
+            --danger: #e74c3c;
+            --dark: #2c3e50;
+            --light: #f5f6fa;
+            --gray: #95a5a6;
+            --white: #ffffff;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --shadow-light: 0 2px 6px rgba(0, 0, 0, 0.05);
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+            height: 100vh;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 20px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            background: linear-gradient(135deg, var(--primary), #2980b9);
+            color: var(--white);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: 80px;
+            display: flex;
+            align-items: center;
+        }
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 20px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo h1 {
+            margin: 0;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .logo-icon {
+            font-size: 28px;
+        }
+        .content {
+            display: flex;
+            flex: 1;
+            gap: 25px;
+            padding-top: 100px;
+            padding-bottom: 20px;
+            overflow-y: auto;
+        }
+        .map-container {
+            flex: 2;
+            background: linear-gradient(135deg, #f5f6fa, #e8eef3);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+            min-height: 400px;
+            height: calc(100vh - 120px);
+        }
+        .controls {
+            flex: 1;
+            background-color: var(--white);
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            overflow-y: auto;
+            min-height: 400px;
+            height: calc(100vh - 120px);
+        }
+        .map {
+            width: 100%;
+            height: 100%;
+        }
+        svg {
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXR0ZXJuIGlkPSJncmlkIiB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPjxyZWN0IHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCIgZmlsbD0iI2Y1ZjVmNSIgc3Ryb2tlPSIjZGRkIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==');
+        }
+        .node-group {
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        .node-outer {
+            stroke-width: 3;
+            fill: none;
+            transition: stroke 0.2s ease;
+        }
+        .node-inner {
+            transition: transform 0.2s ease, filter 0.2s ease;
+        }
+        .node-group:hover .node-inner {
+            transform: scale(1.2);
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
+        }
+        .node-group:hover .node-outer {
+            stroke: #ffffff;
+        }
+        .node.transport .node-inner { fill: url(#transport-gradient); }
+        .node.attraction .node-inner { fill: url(#attraction-gradient); }
+        .node.nature .node-inner { fill: url(#nature-gradient); }
+        .node.shopping .node-inner { fill: url(#shopping-gradient); }
+        .node.entertainment .node-inner { fill: url(#entertainment-gradient); }
+        .node.dining .node-inner { fill: url(#dining-gradient); }
+        .node.business .node-inner { fill: url(#business-gradient); }
+        .node.transport .node-outer { stroke: #1e90ff; }
+        .node.attraction .node-outer { stroke: #ff9800; }
+        .node.nature .node-outer { stroke: #27ae60; }
+        .node.shopping .node-outer { stroke: #e74c3c; }
+        .node.entertainment .node-outer { stroke: #16a085; }
+        .node.dining .node-outer { stroke: #d35400; }
+        .node.business .node-outer { stroke: #2c3e50; }
+        .road {
+            stroke: #7f8c8d;
+            stroke-width: 3;
+            transition: stroke-width 0.3s ease, stroke 0.3s ease;
+        }
+        .road.highlighted {
+            stroke: #e74c3c;
+            stroke-width: 6;
+            animation: pulse 1.5s infinite;
+        }
+        .location-label {
+            font-size: 16px;
+            fill: var(--dark);
+            font-weight: 600;
+            pointer-events: none;
+            text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9);
+        }
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: var(--white);
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            pointer-events: none;
+            display: none;
+            z-index: 10;
+            box-shadow: var(--shadow-light);
+        }
+        .legend {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.98);
+            padding: 12px 18px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            font-size: 14px;
+            border: 1px solid #eee;
+            z-index: 100;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+        }
+        .legend-color {
+            width: 14px;
+            height: 14px;
+            margin-right: 10px;
+            border-radius: 50%;
+            box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            color: #34495e;
+        }
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            background: var(--white);
+            transition: border-color 0.2s ease;
+        }
+        select:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 4px rgba(52, 152, 219, 0.3);
+        }
+        .radio-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .radio-button {
+            display: none;
+        }
+        .radio-label {
+            padding: 10px 14px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            flex: 1;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        .radio-button:checked + .radio-label {
+            border-color: var(--primary);
+            background-color: rgba(52, 152, 219, 0.1);
+            color: var(--primary);
+        }
+        button {
+            background: var(--primary);
+            color: var(--white);
+            border: none;
+            padding: 14px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            font-weight: 500;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: #2980b9;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+        .btn-secondary {
+            background: #dfe6e9;
+            color: var(--dark);
+        }
+        .btn-secondary:hover {
+            background: #bdc3c7;
+        }
+        .info-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(52, 152, 219, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(52, 152, 219, 0.2);
+            display: none;
+        }
+        .info-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .value {
+            font-weight: 600;
+            color: var(--dark);
+        }
+        .place-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 6px 0;
+            font-size: 14px;
+        }
+        .place-icon {
+            font-size: 16px;
+        }
+        .alert {
+            padding: 10px 15px;
+            background: #fef3c7;
+            color: #9c4221;
+            border-left: 4px solid #ed8936;
+            border-radius: 6px;
+            margin-top: 12px;
+            font-size: 14px;
+            display: none;
+            box-shadow: var(--shadow-light);
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 12px 0;
+            font-size: 14px;
+            color: var(--gray);
+        }
+        .spinner {
+            border: 3px solid rgba(236, 240, 241, 0.5);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 8px;
+        }
+        .filters {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            background: rgba(255, 255, 255, 0.98);
+            padding: 10px;
+            width: 250px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            border: 1px solid #eee;
+            transition: height 0.3s ease, padding 0.3s ease;
+            overflow: hidden;
+            z-index: 50;
+        }
+        .filters.minimized {
+            height: 40px;
+            padding: 8px 10px;
+        }
+        .filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+        .filter-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--dark);
+        }
+        .filter-toggle {
+            background: none;
+            border: none;
+            margin-top: 10px;
+            font-size: 16px;
+            color: var(--gray);
+            cursor: pointer;
+            padding: 0 5px;
+            width: 100px;
+            transition: color 0.2s ease;
+        }
+        .filter-toggle:hover {
+            color: #000000;
+        }
+        .filter-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            margin-top: 8px;
+            transition: opacity 0.2s ease;
+        }
+        .filters.minimized .filter-buttons {
+            opacity: 0;
+            height: 0;
+            margin: 0;
+        }
+        .filter-button {
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            background: grey;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .filter-button:hover {
+            background: #dfe6e9;
+        }
+        .filter-button.active {
+            background: var(--primary);
+            color: var(--white);
+            border-color: var(--primary);
+        }
+        @keyframes pulse {
+            0% { stroke-width: 6; stroke-opacity: 0.7; }
+            50% { stroke-width: 8; stroke-opacity: 1; }
+            100% { stroke-width: 6; stroke-opacity: 0.7; }
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @media (max-width: 1024px) {
+            .content { 
+                flex-direction: column; 
+                padding-top: 90px;
+            }
+            .map-container, .controls { 
+                height: auto; 
+                min-height: 50vh; 
+                width: 100%;
+            }
+        }
+        @media (max-width: 768px) {
+            .container { padding: 0 10px; }
+            header { 
+                padding: 15px; 
+                height: 70px;
+            }
+            .logo h1 { font-size: 24px; }
+            .logo-icon { font-size: 20px; }
+            .content { padding-top: 80px; }
+            .map-container { 
+                height: 50vh;
+                min-height: 300px;
+            }
+            .controls { padding: 15px; }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon"><i class="fas fa-route"></i></div>
+                <h1>Travel Route Planner</h1>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="content">
+            <div class="map-container">
+                <div class="map" id="map-area">
+                    <svg id="road-network" viewBox="0 0 1400 1000">
+                        <!-- Gradients for Nodes -->
+                        <defs>
+                            <radialGradient id="transport-gradient" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" style="stop-color:#1e90ff;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#104e8b;stop-opacity:1" />
+                            </radialGradient>
+                            <radialGradient id="attraction-gradient" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" style="stop-color:#ff9800;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#cd6600;stop-opacity:1" />
+                            </radialGradient>
+                            <radialGradient id="nature-gradient" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" style="stop-color:#27ae60;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#1a7042;stop-opacity:1" />
+                            </radialGradient>
+                            <radialGradient id="shopping-gradient" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" style="stop-color:#e74c3c;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#a93226;stop-opacity:1" />
+                            </radialGradient>
+                            <radialGradient id="entertainment-gradient" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" style="stop-color:#16a085;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#0f665e;stop-opacity:1" />
+                            </radialGradient>
+                            <radialGradient id="dining-gradient" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" style="stop-color:#d35400;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#9e3e00;stop-opacity:1" />
+                            </radialGradient>
+                            <radialGradient id="business-gradient" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" style="stop-color:#2c3e50;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#1a252f;stop-opacity:1" />
+                            </radialGradient>
+                        </defs>
+                        <!-- Roads -->
+                        <line class="road" x1="400" y1="300" x2="500" y2="400" data-id="A-B" />
+                        <line class="road" x1="400" y1="300" x2="300" y2="200" data-id="A-E" />
+                        <line class="road" x1="400" y1="300" x2="400" y2="400" data-id="A-F" />
+                        <line class="road" x1="500" y1="400" x2="600" y2="500" data-id="B-C" />
+                        <line class="road" x1="500" y1="400" x2="600" y2="300" data-id="B-G" />
+                        <line class="road" x1="600" y1="500" x2="700" y2="600" data-id="C-D" />
+                        <line class="road" x1="600" y1="500" x2="700" y2="400" data-id="C-H" />
+                        <line class="road" x1="700" y1="600" x2="800" y2="500" data-id="D-I" />
+                        <line class="road" x1="700" y1="600" x2="900" y2="600" data-id="D-J" />
+                        <line class="road" x1="300" y1="200" x2="400" y2="400" data-id="E-F" />
+                        <line class="road" x1="300" y1="200" x2="200" y2="300" data-id="E-K" />
+                        <line class="road" x1="400" y1="400" x2="600" y2="300" data-id="F-G" />
+                        <line class="road" x1="400" y1="400" x2="500" y2="500" data-id="F-L" />
+                        <line class="road" x1="600" y1="300" x2="700" y2="400" data-id="G-H" />
+                        <line class="road" x1="600" y1="300" x2="600" y2="400" data-id="G-M" />
+                        <line class="road" x1="700" y1="400" x2="800" y2="500" data-id="H-I" />
+                        <line class="road" x1="700" y1="400" x2="800" y2="300" data-id="H-N" />
+                        <line class="road" x1="800" y1="500" x2="900" y2="600" data-id="I-J" />
+                        <line class="road" x1="800" y1="500" x2="900" y2="400" data-id="I-O" />
+                        <line class="road" x1="900" y1="600" x2="1000" y2="500" data-id="J-P" />
+                        <line class="road" x1="200" y1="300" x2="500" y2="500" data-id="K-L" />
+                        <line class="road" x1="200" y1="300" x2="300" y2="400" data-id="K-Q" />
+                        <line class="road" x1="500" y1="500" x2="600" y2="400" data-id="L-M" />
+                        <line class="road" x1="500" y1="500" x2="600" y2="600" data-id="L-R" />
+                        <line class="road" x1="600" y1="400" x2="800" y2="300" data-id="M-N" />
+                        <line class="road" x1="600" y1="400" x2="700" y2="500" data-id="M-S" />
+                        <line class="road" x1="800" y1="300" x2="900" y2="400" data-id="N-O" />
+                        <line class="road" x1="800" y1="300" x2="900" y2="200" data-id="N-T" />
+                        <line class="road" x1="900" y1="400" x2="1000" y2="500" data-id="O-P" />
+                        <line class="road" x1="1000" y1="500" x2="300" y2="400" data-id="P-Q" />
+                        <line class="road" x1="300" y1="400" x2="600" y2="600" data-id="Q-R" />
+                        <line class="road" x1="600" y1="600" x2="700" y2="500" data-id="R-S" />
+                        <line class="road" x1="700" y1="500" x2="900" y2="200" data-id="S-T" />
+                    </svg>
+                    <div class="legend">
+                        <div class="legend-item"><div class="legend-color" style="background-color: #1e90ff;"></div><div>Transport</div></div>
+                        <div class="legend-item"><div class="legend-color" style="background-color: #ff9800;"></div><div>Attraction</div></div>
+                        <div class="legend-item"><div class="legend-color" style="background-color: #27ae60;"></div><div>Nature</div></div>
+                        <div class="legend-item"><div class="legend-color" style="background-color: #e74c3c;"></div><div>Shopping</div></div>
+                        <div class="legend-item"><div class="legend-color" style="background-color: #16a085;"></div><div>Entertainment</div></div>
+                        <div class="legend-item"><div class="legend-color" style="background-color: #d35400;"></div><div>Dining</div></div>
+                        <div class="legend-item"><div class="legend-color" style="background-color: #2c3e50;"></div><div>Business</div></div>
+                    </div>
+                    <div class="filters" id="filter-tray">
+                        <div class="filter-header" onclick="toggleFilters()">
+                            <span class="filter-title">Filter by Type</span>
+                            <button class="filter-toggle" id="filter-toggle"><i class="fas fa-minus"></i></button>
+                        </div>
+                        <div class="filter-buttons">
+                            <button class="filter-button active" data-type="all">All</button>
+                            <button class="filter-button" data-type="transport">Transport</button>
+                            <button class="filter-button" data-type="attraction">Attractions</button>
+                            <button class="filter-button" data-type="nature">Nature</button>
+                            <button class="filter-button" data-type="shopping">Shopping</button>
+                            <button class="filter-button" data-type="entertainment">Entertainment</button>
+                            <button class="filter-button" data-type="dining">Dining</button>
+                            <button class="filter-button" data-type="business">Business</button>
+                        </div>
+                    </div>
+                    <div class="tooltip" id="tooltip"></div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <div class="form-title">Plan Your Route</div>
+                <div class="form-group">
+                    <label for="start-point"><i class="fas fa-map-marker-alt"></i> Starting Point:</label>
+                    <select id="start-point"><option value="">Select starting point</option></select>
+                </div>
+                <div class="form-group">
+                    <label for="end-point"><i class="fas fa-flag-checkered"></i> Destination:</label>
+                    <select id="end-point"><option value="">Select destination</option></select>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-walking"></i> Transportation Mode:</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="mode-walking" name="mode" value="walking" class="radio-button" checked>
+                            <label for="mode-walking" class="radio-label">Walking</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="mode-cycling" name="mode" value="cycling" class="radio-button">
+                            <label for="mode-cycling" class="radio-label">Cycling</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="mode-driving" name="mode" value="driving" class="radio-button">
+                            <label for="mode-driving" class="radio-label">Driving</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="mode-public" name="mode" value="public" class="radio-button">
+                            <label for="mode-public" class="radio-label">Public</label>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" id="find-route"><i class="fas fa-route"></i> Find Best Route</button>
+                <button type="button" id="reset-route" class="btn-secondary"><i class="fas fa-undo"></i> Reset Route</button>
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Calculating route...
+                </div>
+                <div class="alert"></div>
+                <div class="info-panel" id="route-info">
+                    <div class="info-title">Route Details</div>
+                    <div class="stat-item"><span>Distance:</span><span class="value" id="route-distance"></span></div>
+                    <div class="stat-item"><span>Estimated Time:</span><span class="value" id="route-time"></span></div>
+                    <div class="places-list" id="route-stops"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const nodeCoords = {
+            'A': { x: 400, y: 300 },  // Downtown
+            'B': { x: 500, y: 400 },  // Train Station
+            'C': { x: 600, y: 500 },  // Museum District
+            'D': { x: 700, y: 600 },  // Central Park
+            'E': { x: 300, y: 200 },  // Airport
+            'F': { x: 400, y: 400 },  // Bus Terminal
+            'G': { x: 600, y: 300 },  // Art Quarter
+            'H': { x: 700, y: 400 },  // Lakefront
+            'I': { x: 800, y: 500 },  // Botanical Gardens
+            'J': { x: 900, y: 600 },  // Zoo
+            'K': { x: 200, y: 300 },  // Industrial Zone
+            'L': { x: 500, y: 500 },  // Shopping District
+            'M': { x: 600, y: 400 },  // Theater District
+            'N': { x: 800, y: 300 },  // Beach
+            'O': { x: 900, y: 400 },  // Stadium
+            'P': { x: 1000, y: 500 }, // Amusement Park
+            'Q': { x: 300, y: 400 },  // Tech Hub
+            'R': { x: 600, y: 600 },  // Food Market
+            'S': { x: 700, y: 500 },  // Cinema Row
+            'T': { x: 900, y: 200 }   // Pier
+        };
+
+        let nodeData = {};
+
+        async function loadNodes() {
+            try {
+                const response = await fetch('/nodes');
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                nodeData = await response.json();
+                console.log('Node data loaded:', nodeData);
+                const startSelect = document.getElementById('start-point');
+                const endSelect = document.getElementById('end-point');
+                const svg = document.getElementById('road-network');
+
+                for (const [id, node] of Object.entries(nodeData)) {
+                    const option = document.createElement('option');
+                    option.value = id;
+                    option.textContent = node.name;
+                    startSelect.appendChild(option.cloneNode(true));
+                    endSelect.appendChild(option);
+
+                    // Create a group for each node
+                    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    group.setAttribute('class', `node-group node ${node.type}`);
+                    group.setAttribute('data-id', id);
+
+                    // Outer ring
+                    const outerCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    outerCircle.setAttribute('class', 'node-outer');
+                    outerCircle.setAttribute('cx', nodeCoords[id].x);
+                    outerCircle.setAttribute('cy', nodeCoords[id].y);
+                    outerCircle.setAttribute('r', '20'); // Larger outer ring
+                    group.appendChild(outerCircle);
+
+                    // Inner circle with gradient
+                    const innerCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    innerCircle.setAttribute('class', 'node-inner');
+                    innerCircle.setAttribute('cx', nodeCoords[id].x);
+                    innerCircle.setAttribute('cy', nodeCoords[id].y);
+                    innerCircle.setAttribute('r', '14'); // Inner circle slightly smaller
+                    group.appendChild(innerCircle);
+
+                    group.addEventListener('mouseover', (e) => showTooltip(e, node));
+                    group.addEventListener('mouseout', hideTooltip);
+                    svg.appendChild(group);
+
+                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    text.setAttribute('class', 'location-label');
+                    text.setAttribute('x', nodeCoords[id].x + 25);
+                    text.setAttribute('y', nodeCoords[id].y - 15);
+                    text.textContent = node.name.split(' ')[0];
+                    svg.appendChild(text);
+                }
+            } catch (error) {
+                console.error('Error loading nodes:', error);
+                showAlert('Failed to load map data. Check console for details.');
+            }
+        }
+
+        async function findRoute() {
+            const start = document.getElementById('start-point').value;
+            const end = document.getElementById('end-point').value;
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+
+            if (!start || !end) {
+                showAlert('Please select both start and end points.');
+                return;
+            }
+
+            showLoading(true);
+            try {
+                const response = await fetch('/route', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ start, end, mode })
+                });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+                displayRoute(data.path, data.distance, data.time);
+            } catch (error) {
+                console.error('Error finding route:', error);
+                showAlert(error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displayRoute(path, distance, time) {
+            resetMap();
+            for (let i = 0; i < path.length - 1; i++) {
+                const segment = [path[i], path[i + 1]].sort().join('-');
+                const road = document.querySelector(`[data-id="${segment}"]`);
+                if (road) road.classList.add('highlighted');
+            }
+
+            document.getElementById('route-distance').textContent = `${distance} km`;
+            document.getElementById('route-time').textContent = `${time} min`;
+            const stopsList = document.getElementById('route-stops');
+            stopsList.innerHTML = path.map(id => `<div class="place-item"><span class="place-icon">📍</span><span class="place-name">${nodeData[id].name}</span></div>`).join('');
+            document.getElementById('route-info').style.display = 'block';
+        }
+
+        function resetMap() {
+            document.querySelectorAll('.road').forEach(road => road.classList.remove('highlighted'));
+            document.getElementById('route-info').style.display = 'none';
+            document.querySelector('.alert').style.display = 'none';
+        }
+
+        function showLoading(show) {
+            document.querySelector('.loading').style.display = show ? 'block' : 'none';
+        }
+
+        function showAlert(message) {
+            const alert = document.querySelector('.alert');
+            alert.textContent = message;
+            alert.style.display = 'block';
+            setTimeout(() => alert.style.display = 'none', 3000);
+        }
+
+        function showTooltip(event, node) {
+            const tooltip = document.getElementById('tooltip');
+            tooltip.textContent = `${node.name}: ${node.desc}`;
+            tooltip.style.left = `${event.pageX + 10}px`;
+            tooltip.style.top = `${event.pageY - 10}px`;
+            tooltip.style.display = 'block';
+        }
+
+        function hideTooltip() {
+            document.getElementById('tooltip').style.display = 'none';
+        }
+
+        function toggleFilters() {
+            const filterTray = document.getElementById('filter-tray');
+            const toggleBtn = document.getElementById('filter-toggle');
+            filterTray.classList.toggle('minimized');
+            toggleBtn.innerHTML = filterTray.classList.contains('minimized') ? '<i class="fas fa-plus"></i>' : '<i class="fas fa-minus"></i>';
+        }
+
+        document.querySelectorAll('.filter-button').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.filter-button').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                const type = button.dataset.type;
+                document.querySelectorAll('.node-group').forEach(node => {
+                    node.style.display = (type === 'all' || node.classList.contains(type)) ? 'block' : 'none';
+                });
+            });
+        });
+
+        document.getElementById('find-route').addEventListener('click', findRoute);
+        document.getElementById('reset-route').addEventListener('click', resetMap);
+
+        window.onload = function() {
+            console.log('Page loaded, initiating loadNodes...');
+            loadNodes();
+        };
+    </script>
+</body>
+</html>
